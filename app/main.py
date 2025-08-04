@@ -1,8 +1,11 @@
+from dotenv import load_dotenv
 from ual.influx import sensors
 from ual.influx.Influx_db_connector import InfluxDBConnector
 from ual.influx.influx_buckets import InfluxBuckets
 from ual.influx.influx_query_builder import InfluxQueryBuilder
 from ual.get_config import get_config
+
+load_dotenv()
 
 run_config = get_config("./run_config.yaml")
 run_config["ual_bucket"] = InfluxBuckets.UAL_MINUTE_CALIBRATION_BUCKET.value
