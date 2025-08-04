@@ -5,6 +5,7 @@ name = "pypi"
 
 [packages]
 ual = {ref = "main", git = "https://github.com/urban-air-lab/common.git"}
+dotenv = "*"
 
 [dev-packages]
 
