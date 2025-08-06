@@ -4,8 +4,8 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-ual = {ref = "main", git = "https://github.com/urban-air-lab/common.git"}
 dotenv = "*"
+ual = {ref = "main", git = "https://github.com/urban-air-lab/common.git"}
 
 [dev-packages]
 
