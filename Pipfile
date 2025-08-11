@@ -5,8 +5,8 @@ name = "pypi"
 
 [packages]
 dotenv = "*"
-ual = {ref = "main", git = "https://github.com/urban-air-lab/common.git"}
 scikit-learn = "*"
+ual = {ref = "main", git = "https://github.com/urban-air-lab/common.git"}
 
 [dev-packages]
 
