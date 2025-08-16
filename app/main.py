@@ -31,7 +31,11 @@ def main():
 
     for this_step, next_step in pairwise(intervals):
         if len(this_step) != interval_length or len(next_step) != interval_length:
-            break
+            diff1: int = interval_length - len(this_step)
+            diff2: int = interval_length - len(next_step)
+            diff: int = max(diff1, diff2)
+            # wait for diff time
+
         this_inputs: pd.DataFrame = get_inputs_by_dates(connection, this_step[0].strftime(ISO_format),
                                                         this_step[-1].strftime(ISO_format), run_config)
         this_targets: pd.DataFrame = get_targets_by_dates(connection, this_step[0].strftime(ISO_format),
