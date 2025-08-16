@@ -63,13 +63,14 @@ def main():
                                               .align_dataframes_by_time())
 
         predictions: np.ndarray = model.predict(next_data_processor.get_inputs())
-        df: pd.DataFrame = pd.DataFrame(data=predictions.flatten(), columns=[run_config["targets"][0]])
-        df["timestamp"] = next_data_processor.get_target(run_config["targets"]).index.astype('int64') // 1_000_000_000
+        results = create_results(next_data_processor, predictions, run_config)
 
-        print(df)
+        print(results)
 
         mqtt_client = MQTTClient()
-        mqtt_client.publish_dataframe(df, f'sensors/ual-hour-inference/{run_config["ual_bucket"]}')
+        mqtt_client.publish_dataframe(results, f'sensors/ual-hour-inference/{run_config["ual_bucket"]}')
+
+
 
 
 def get_timestamps_of_bucket(connection: InfluxDBConnector, run_config: dict) -> pd.DatetimeIndex:
@@ -109,6 +110,12 @@ def get_influx_data_by_dates(connection: InfluxDBConnector,
 
 def slice_datetime_index(dt_index: pd.DatetimeIndex, chunk_size: int) -> list:
     return [dt_index[i:i + chunk_size] for i in range(0, len(dt_index), chunk_size)]
+
+
+def create_results(next_data_processor, predictions, run_config):
+    df: pd.DataFrame = pd.DataFrame(data=predictions.flatten(), columns=[run_config["targets"][0]])
+    df["timestamp"] = next_data_processor.get_target(run_config["targets"]).index.astype('int64') // 1_000_000_000
+    return df
 
 
 if __name__ == "__main__":
