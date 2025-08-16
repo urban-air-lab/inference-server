@@ -35,6 +35,7 @@ def main():
             diff2: int = interval_length - len(next_step)
             diff: int = max(diff1, diff2)
             # wait for diff time
+            # schedular now + diff minutes
 
         this_inputs: pd.DataFrame = get_inputs_by_dates(connection, this_step[0].strftime(ISO_format),
                                                         this_step[-1].strftime(ISO_format), run_config)
