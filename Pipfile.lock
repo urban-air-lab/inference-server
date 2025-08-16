@@ -507,7 +507,7 @@
         },
         "ual": {
             "git": "https://github.com/urban-air-lab/common.git",
-            "ref": "b7c5b3b13b59a4d824552f09622196a6682bb825"
+            "ref": "c2aa2c7830631546d9614ba63f1afce57d269f82"
         },
         "urllib3": {
             "hashes": [
