@@ -113,16 +113,3 @@ def slice_datetime_index(dt_index: pd.DatetimeIndex, chunk_size: int) -> list:
 
 if __name__ == "__main__":
     main()
-
-# Get all timestamps of bucket
-# Slice timestamps in intervals f.e. 14 days
-# while loop
-# check if in intervall all ual and lubw data is present
-# if not -> schedul until interval is full
-# get new timestamps
-# get for intervall ual and lubw data
-# train model
-# check if interval+1 is complete
-# use model for interval+1
-# schedul for next timestamps
-# get new timestamps
