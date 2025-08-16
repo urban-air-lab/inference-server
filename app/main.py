@@ -1,3 +1,4 @@
+import numpy as np
 from dotenv import load_dotenv
 from ual.influx import sensors
 from ual.influx.Influx_db_connector import InfluxDBConnector
@@ -8,6 +9,8 @@ from ual.data_processor import DataProcessor
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
 from itertools import pairwise
+
+from ual.mqtt.mqtt_client import MQTTClient
 
 load_dotenv()
 
@@ -54,10 +57,14 @@ def main():
                                               .calculate_w_a_difference()
                                               .align_dataframes_by_time())
 
-        predictions: list = model.predict(next_data_processor.get_inputs())
-        df: pd.DataFrame = pd.DataFrame(data=predictions, index=next_data_processor.get_target(run_config["targets"]).index)
+        predictions: np.ndarray = model.predict(next_data_processor.get_inputs())
+        df: pd.DataFrame = pd.DataFrame(data=predictions.flatten(), columns=[run_config["targets"][0]])
+        df["timestamp"] = next_data_processor.get_target(run_config["targets"]).index.astype('int64') // 1_000_000_000
 
         print(df)
+
+        mqtt_client = MQTTClient()
+        mqtt_client.publish_dataframe(df, f'sensors/ual-hour-inference/{run_config["ual_bucket"]}')
 
 
 def get_timestamps_of_bucket(connection: InfluxDBConnector, run_config: dict) -> pd.DatetimeIndex:
