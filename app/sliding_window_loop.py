@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 from dotenv import load_dotenv
 from ual.influx import sensors
@@ -22,7 +24,7 @@ def main():
     run_config["lubw_bucket"] = InfluxBuckets.LUBW_HOUR_BUCKET.value
     run_config["lubw_sensor"] = sensors.LUBWSensors.DEBW015.value
 
-    connection = InfluxDBConnector()
+    connection = InfluxDBConnector(os.getenv("INFLUX_URL"), os.getenv("INFLUX_TOKEN"), os.getenv("INFLUX_ORG"))
 
     bucket_timestamps: pd.DatetimeIndex = get_timestamps_of_bucket(connection, run_config)
     interval_length: int = 10000
@@ -69,8 +71,6 @@ def main():
 
         mqtt_client = MQTTClient()
         mqtt_client.publish_dataframe(results, f'sensors/ual-hour-inference/{run_config["ual_bucket"]}')
-
-
 
 
 def get_timestamps_of_bucket(connection: InfluxDBConnector, run_config: dict) -> pd.DatetimeIndex:
@@ -120,3 +120,23 @@ def create_results(next_data_processor, predictions, run_config):
 
 if __name__ == "__main__":
     main()
+
+# Set Start Datum
+# Set interval length
+# get current interval
+# check current interval
+# if false wait
+# train model
+
+# get next interval
+# check next interval
+# inference all available data
+# wait for next data point
+    # get it, inference
+# if all data
+    # train next model
+# wait for next data point
+    # get it, inference
+# if all data
+    # train next model
+# ...
