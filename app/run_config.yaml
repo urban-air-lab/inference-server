@@ -1,5 +1,6 @@
 start_time: "2024-11-16T00:00:00Z"
 stop_time: "2025-04-08T23:00:00Z"
+interval: 10000
 inputs:
   - RAW_ADC_NO2_W
   - RAW_ADC_NO2_A
@@ -11,5 +12,3 @@ inputs:
   - sht_humid
 targets:
   - NO2
-experiment_name: "Model Comparison NO2"
-run_name: "ual3-winter"
