@@ -69,7 +69,7 @@ def main():
 
         print(results)
 
-        mqtt_client = MQTTClient()
+        mqtt_client = MQTTClient(os.getenv("MQTT_SERVER"), int(os.getenv("MQTT_PORT")), os.getenv("MQTT_USERNAME"), os.getenv("MQTT_PASSWORD"))
         mqtt_client.publish_dataframe(results, f'sensors/ual-hour-inference/{run_config["ual_bucket"]}')
 
 
@@ -120,23 +120,3 @@ def create_results(next_data_processor, predictions, run_config):
 
 if __name__ == "__main__":
     main()
-
-# Set Start Datum
-# Set interval length
-# get current interval
-# check current interval
-# if false wait
-# train model
-
-# get next interval
-# check next interval
-# inference all available data
-# wait for next data point
-    # get it, inference
-# if all data
-    # train next model
-# wait for next data point
-    # get it, inference
-# if all data
-    # train next model
-# ...
