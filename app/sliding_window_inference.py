@@ -132,9 +132,9 @@ class SlidingWindowsInference:
                           .calculate_w_a_difference()
                           .align_dataframes_by_time())
         prediction: np.ndarray = self.model.predict(self.processor.get_inputs())
-        results = self._create_results(prediction)
+        results = self._create_results(prediction, self.processor.get_inputs().index)
+        self.mqtt.publish_dataframe(results, f'sensors/ual-hour-inference/test')
         logging.info(f"Publishing {len(results)} predictions.")
-        self.mqtt.publish_dataframe(results, f'sensors/ual-hour-inference/{self.configuration["ual_bucket"]}')
 
     def _create_time_interval(self, start: str) -> (str, str):
         start_dt: datetime = datetime.strptime(start, "%Y-%m-%dT%H:%M:%SZ")
@@ -156,10 +156,9 @@ class SlidingWindowsInference:
             logging.info("No new data yet, sleeping...")
             await asyncio.sleep(60)
 
-    def _create_results(self, predictions):
+    def _create_results(self, predictions: np.ndarray, index: pd.DatetimeIndex) -> pd.DataFrame:
         df: pd.DataFrame = pd.DataFrame(data=predictions.flatten(), columns=[self.configuration["targets"][0]])
-        date_range = pd.date_range(self.interval_start_time, self.interval_end_time, freq='h', tz='UTC')
-        df["timestamp"] = [int(ts.timestamp()) for ts in date_range]
+        df["timestamp"] = (index.astype("int64") // 1_000_000_000).astype(np.int64)
         return df
 
 
