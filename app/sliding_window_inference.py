@@ -71,7 +71,7 @@ class SlidingWindowsInference:
                 self.configuration["targets"]
             )
             logging.info(f"Loaded {len(self.targets)} target rows.")
-        except Exception as e:
+        except Exception as e: #TODO Besseres Handling in client selbst , aktuell nur workaround
             logging.info(f"No train data in interval {self.interval_start_time} : {self.interval_end_time}")
             logging.info(f"skip interval")
             return
@@ -84,6 +84,7 @@ class SlidingWindowsInference:
             else:
                 logging.info(f"No new data in train interval {self.interval_start_time} : {self.interval_end_time}")
                 return
+
 
         processor = (DataProcessor(self.inputs, self.targets)
                      .to_hourly()
@@ -240,7 +241,7 @@ class SlidingWindowsInference:
         return int(self.configuration["interval"]) // 60
 
     def _inputs_small_then_interval(self) -> bool:
-        return self.inputs.shape[0] < self.configuration["interval"]
+        return len(self.inputs) < self.configuration["interval"]
 
     def _interval_is_hourly(self) -> bool:
         return self.configuration["interval"] % 60 == 0
