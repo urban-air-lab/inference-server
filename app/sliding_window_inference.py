@@ -184,13 +184,13 @@ class SlidingWindowsInference:
             new_inputs_hourly = new_inputs.resample("h").mean()
 
             if len(new_inputs_hourly) > len(current_inputs_hourly):
-                newly_full = new_inputs.index.difference(published_hours)
+                newly_full = new_inputs_hourly.index.difference(published_hours)
                 if not newly_full.empty:
                     logging.info(f"Detected {len(newly_full)} newly completed hour(s): {list(newly_full)}")
                     return new_inputs
 
-            logging.info("No newly completed hour yet, sleeping 60s...")
-            await asyncio.sleep(60)
+            logging.info("No newly completed hour yet, sleeping 1h...")
+            await asyncio.sleep(3600)
 
     async def _wait_for_next_input(self, current_inputs: pd.DataFrame) -> pd.DataFrame:
         while True:
