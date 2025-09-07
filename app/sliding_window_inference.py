@@ -1,6 +1,4 @@
-import logging
 import os
-import sys
 import numpy as np
 import pandas as pd
 import asyncio
@@ -10,15 +8,12 @@ from ual.data_processor import DataProcessor
 from ual.get_config import get_config
 from ual.influx import sensors
 from ual.influx.influx_buckets import InfluxBuckets
+from ual.influx.sensors import SensorSource
+from ual.logging import get_logger
 from ual.mqtt.mqtt_client import MQTTClient
 from app.influxdb_service import InfluxDBService
-from app.sensor_source import SensorSource
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s %(levelname)s %(message)s',
-    handlers=[logging.StreamHandler(sys.stdout)]
-)
+logging = get_logger("sliding_window_inference", 10)
 
 
 class SlidingWindowsInference:
@@ -71,7 +66,11 @@ class SlidingWindowsInference:
                 self.configuration["targets"]
             )
             logging.info(f"Loaded {len(self.targets)} target rows.")
-        except Exception as e: #TODO Besseres Handling in client selbst , aktuell nur workaround
+        except Exception as e:
+            logging.info(f"error during influx requests", exc_info=True)
+            return
+
+        if self.inputs.empty or self.targets.empty:
             logging.info(f"No train data in interval {self.interval_start_time} : {self.interval_end_time}")
             logging.info(f"skip interval")
             return
@@ -85,17 +84,16 @@ class SlidingWindowsInference:
                 logging.info(f"No new data in train interval {self.interval_start_time} : {self.interval_end_time}")
                 return
 
-
         processor = (DataProcessor(self.inputs, self.targets)
                      .to_hourly()
                      .remove_nan()
-                     .calculate_w_a_difference()
+                     .calculate_w_a_difference(self.configuration["targets"])
                      .align_dataframes_by_time())
 
         logging.info("Training RandomForestRegressor...")
         self.model: RandomForestRegressor = RandomForestRegressor()
         self.model.fit(processor.get_inputs(),
-                       processor.get_target(self.configuration["targets"]))  # TODO: Auslagern in Thread?
+                       processor.get_targets())  # TODO: Auslagern in Thread?
 
         logging.info("Model trained successfully.")
 
@@ -115,7 +113,11 @@ class SlidingWindowsInference:
             )
             logging.info(f"Initial inference inputs: {len(current_inputs)} rows")
         except Exception as e:
-            logging.info(f"No inference data in interval {self.interval_start_time} : {self.interval_end_time}")
+            logging.info(f"error during influx requests", exc_info=True)
+            return
+
+        if self.inputs.empty:
+            logging.info(f"No train data in interval {self.interval_start_time} : {self.interval_end_time}")
             logging.info(f"skip interval")
             return
 
@@ -123,7 +125,7 @@ class SlidingWindowsInference:
             processor = (DataProcessor(current_inputs)
                          .to_hourly()
                          .remove_nan()
-                         .calculate_w_a_difference()
+                         .calculate_w_a_difference(self.configuration["targets"])
                          .align_dataframes_by_time())
             current_inputs_hourly = processor.get_inputs()
             hours_ready_to_predict = current_inputs_hourly.index.difference(published_hours)
@@ -140,7 +142,7 @@ class SlidingWindowsInference:
                                                 f'sensors/ual-hour-inference/{self.ual_source.get_bucket()}')
                     published_hours = published_hours.union(hours_ready_to_predict)
 
-            if current_inputs_hourly.shape[0] >= expected_hours:
+            if current_inputs_hourly.shape[0] >= expected_hours:  # TODO: Auslagern?
                 logging.info("Inference window complete.")
                 break
 
@@ -233,7 +235,7 @@ class SlidingWindowsInference:
         return start_dt.strftime("%Y-%m-%dT%H:%M:%SZ"), end_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
 
     def _create_results(self, predictions: np.ndarray, index: pd.DatetimeIndex) -> pd.DataFrame:
-        df: pd.DataFrame = pd.DataFrame(data=predictions.flatten(), columns=[self.configuration["targets"][0]])
+        df: pd.DataFrame = pd.DataFrame(data=predictions.flatten(), columns=[self.configuration["targets"][0]]) # TODO: indexing notwendig?
         df["timestamp"] = (index.astype("int64") // 1_000_000_000).astype(np.int64)
         return df
 

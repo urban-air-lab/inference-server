@@ -1,10 +1,8 @@
-import os
 import pandas as pd
 from dotenv import load_dotenv
 from ual.influx.Influx_db_connector import InfluxDBConnector
 from ual.influx.influx_query_builder import InfluxQueryBuilder
-
-from app.sensor_source import SensorSource
+from ual.influx.sensors import SensorSource
 
 load_dotenv()
 
