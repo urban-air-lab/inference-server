@@ -1,5 +1,4 @@
 import os
-
 import numpy as np
 import pandas as pd
 from dotenv import load_dotenv
@@ -51,7 +50,7 @@ model: BaseEstimator = mlflow.sklearn.load_model(f"models:/{model_name}/{model_v
 
 prediction: np.ndarray = model.predict(data_processor.get_inputs())
 
-dataframe_predictions = pd.DataFrame(prediction, columns=["NO"])
+dataframe_predictions = pd.DataFrame(prediction, columns=["NO2"])
 dataframe_predictions["timestamp"] = data_processor.get_inputs().index.astype('int64') // 10**9
 
 data = dataframe_predictions.to_dict(orient='records')
