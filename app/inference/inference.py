@@ -1,9 +1,14 @@
 import os
+from datetime import datetime, timedelta, timezone
+from typing import Tuple
+
 import numpy as np
 import pandas as pd
+from apscheduler.schedulers.blocking import BlockingScheduler
 from dotenv import load_dotenv
 from ual.data_processor import DataProcessor
 from ual.get_config import get_config
+from ual.logging import get_logger
 from ual.influx import sensors
 from ual.influx.Influx_db_connector import InfluxDBConnector
 from ual.influx.influx_buckets import InfluxBuckets
@@ -14,6 +19,7 @@ from sklearn.base import BaseEstimator
 from ual.mqtt.mqtt_client import MQTTClient
 
 load_dotenv()
+logging = get_logger()
 
 ual_source = SensorSource(bucket=InfluxBuckets.UAL_MINUTE_CALIBRATION_BUCKET,
                           sensor=sensors.UALSensors.UAL_3)
@@ -25,37 +31,85 @@ run_config["ual_sensor"] = ual_source.get_sensor()
 connection: InfluxDBConnector = InfluxDBConnector(os.getenv("INFLUX_URL"), os.getenv("INFLUX_TOKEN"),
                                                   os.getenv("INFLUX_ORG"))
 
-inputs_query: str = InfluxQueryBuilder() \
-    .set_bucket(ual_source.get_bucket()) \
-    .set_range(run_config["start_time"], run_config["stop_time"]) \
-    .set_topic(ual_source.get_sensor()) \
-    .set_fields(run_config["inputs"]) \
-    .build()
-input_data: pd.DataFrame = connection.query_dataframe(inputs_query)
-
-data_processor: DataProcessor = (DataProcessor(input_data)
-                                 .to_hourly()
-                                 .remove_nan()
-                                 .calculate_w_a_difference(['NO', 'NO2', 'O3'])
-                                 .align_dataframes_by_time())
-
-
 os.environ['MLFLOW_TRACKING_USERNAME'] = os.getenv("MLFLOW_USERNAME")
 os.environ['MLFLOW_TRACKING_PASSWORD'] = os.getenv("MLFLOW_PASSWORD")
 mlflow.set_tracking_uri(os.getenv("MLFLOW_URL"))
 
-model_name: str = "NO2_ual-3"
-model_version: str = "1"
-model: BaseEstimator = mlflow.sklearn.load_model(f"models:/{model_name}/{model_version}")
+model: BaseEstimator = mlflow.sklearn.load_model(f"models:/{run_config['model_name']}/{run_config['model_version']}")
 
-prediction: np.ndarray = model.predict(data_processor.get_inputs())
+def get_last_hour() -> Tuple[str, str]:
+    now: datetime = datetime.now()
+    now: datetime = now.replace(minute=0, second=0, microsecond=0)
 
-dataframe_predictions = pd.DataFrame(prediction, columns=["NO2"])
-dataframe_predictions["timestamp"] = data_processor.get_inputs().index.astype('int64') // 10**9
+    start_of_hour: datetime = now - timedelta(hours=1)
+    start_of_hour_utc = start_of_hour.replace(tzinfo=timezone.utc)
+    start_of_hour_iso_utc = start_of_hour_utc.isoformat().replace("+00:00", "Z")
 
-data = dataframe_predictions.to_dict(orient='records')
-mqtt_client = MQTTClient(os.getenv("MQTT_SERVER"), int(os.getenv("MQTT_PORT")), os.getenv("MQTT_USERNAME"), os.getenv("MQTT_PASSWORD"))
-for element in data:
-    mqtt_client.publish_data(element, "sensors/ual-hour-inference/ual-3")
-mqtt_client.stop()
+    end_of_hour: datetime = now
+    end_of_hour_utc = end_of_hour.replace(tzinfo=timezone.utc)
+    end_of_hour_iso_utc = end_of_hour_utc.isoformat().replace("+00:00", "Z")
+    return start_of_hour_iso_utc, end_of_hour_iso_utc
+
+
+def initial_inference(sensor: SensorSource, config: dict):
+    logging.info("Initial inference started.")
+    inputs_query: str = InfluxQueryBuilder() \
+        .set_bucket(sensor.get_bucket()) \
+        .set_range(config["start_time"], config["stop_time"]) \
+        .set_topic(sensor.get_sensor()) \
+        .set_fields(config["inputs"]) \
+        .build()
+    input_data: pd.DataFrame = connection.query_dataframe(inputs_query)
+    run_inference(input_data)
+    logging.info(f'Initial inference complete for {config["start_time"]} - {config["stop_time"]}')
+
+
+def hourly_inference():
+    start_of_hour, end_of_hour = get_last_hour()
+    logging.info(f"Inference of hour: {start_of_hour} - {end_of_hour}")
+
+    inputs_query: str = InfluxQueryBuilder() \
+        .set_bucket(ual_source.get_bucket()) \
+        .set_range(start_of_hour, end_of_hour) \
+        .set_topic(ual_source.get_sensor()) \
+        .set_fields(run_config["inputs"]) \
+        .build()
+    input_data: pd.DataFrame = connection.query_dataframe(inputs_query)
+    run_inference(input_data)
+    logging.info(f'Inference complete for hour: {start_of_hour} - {end_of_hour}')
+
+
+def run_inference(inputs: pd.DataFrame) -> None:
+    data_processor: DataProcessor = (DataProcessor(inputs)
+                                     .to_hourly()
+                                     .remove_nan()
+                                     .calculate_w_a_difference(['NO', 'NO2', 'O3'])
+                                     .align_dataframes_by_time())
+
+    prediction: np.ndarray = model.predict(data_processor.get_inputs())
+
+    dataframe_predictions: pd.DataFrame = pd.DataFrame(prediction, columns=["NO2"])
+    dataframe_predictions["timestamp"] = data_processor.get_inputs().index.astype('int64') // 10 ** 9
+
+    data: list[dict] = dataframe_predictions.to_dict(orient='records')
+    mqtt_client: MQTTClient = MQTTClient(os.getenv("MQTT_SERVER"), int(os.getenv("MQTT_PORT")),
+                                         os.getenv("MQTT_USERNAME"), os.getenv("MQTT_PASSWORD"))
+    for element in data:
+        mqtt_client.publish_data(element, "sensors/ual-hour-inference/ual-3")
+    mqtt_client.stop()
+
+
+if __name__ == "__main__":
+    initial_inference(ual_source, run_config)
+
+    now = datetime.now()
+    now = now.replace(minute=0, second=0, microsecond=0)
+    next_full_hour = now + timedelta(hours=1, minutes=1) # 1 minute extra to be assured last sensor date arrived
+    logging.info(f"Inference at next full hour: {next_full_hour}")
+
+    scheduler = BlockingScheduler()
+    scheduler.add_job(hourly_inference, 'interval', hours=1, next_run_time=next_full_hour)
+    logging.info("Starting scheduler...")
+    scheduler.start()
+
 

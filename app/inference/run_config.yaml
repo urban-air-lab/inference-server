@@ -1,5 +1,5 @@
-start_time: "2024-11-16T00:00:00Z"
-stop_time: "2025-02-06T00:00:00Z"
+start_time: "2025-01-06T23:00:00Z"
+stop_time: "2025-11-30T17:00:00Z"
 inputs:
   - RAW_ADC_NO2_W
   - RAW_ADC_NO2_A
@@ -11,3 +11,6 @@ inputs:
   - sht_humid
 targets:
   - NO2
+
+model_name: "NO2_ual-3"
+model_version: "1"
