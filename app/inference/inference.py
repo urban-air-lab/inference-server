@@ -21,7 +21,6 @@ from ual.mqtt.mqtt_client import MQTTClient
 load_dotenv()
 logging = get_logger()
 
-
 def get_last_hour() -> Tuple[str, str]:
     now: datetime = datetime.now()
     now: datetime = now.replace(minute=0, second=0, microsecond=0)
@@ -40,6 +39,7 @@ def get_next_full_hour() -> datetime:
     now = now.replace(minute=0, second=0, microsecond=0)
     return now + timedelta(hours=1, minutes=1)  # 1 minute extra to be assured last sensor date arrived
 
+
 class InferenceService:
     def __init__(self, influx_url: str,
                  influx_token: str,
@@ -49,7 +49,6 @@ class InferenceService:
         self.connection: InfluxDBConnector = InfluxDBConnector(influx_url, influx_token,influx_org)
         self.sensor_source = sensor_source
         self.config = config
-
 
     def initial_inference(self):
         logging.info("Initial inference started.")
@@ -62,7 +61,6 @@ class InferenceService:
         input_data: pd.DataFrame = self.connection.query_dataframe(inputs_query)
         self.run_inference(input_data)
         logging.info(f'Initial inference complete for {self.config["start_time"]} - {self.config["stop_time"]}')
-
 
     def hourly_inference(self):
         start_of_hour, end_of_hour = get_last_hour()
@@ -77,7 +75,6 @@ class InferenceService:
         input_data: pd.DataFrame = self.connection.query_dataframe(inputs_query)
         self.run_inference(input_data)
         logging.info(f'Inference complete for hour: {start_of_hour} - {end_of_hour}')
-
 
     def run_inference(self, inputs: pd.DataFrame) -> None:
         data_processor: DataProcessor = (DataProcessor(inputs)
@@ -102,9 +99,6 @@ class InferenceService:
         for element in data:
             mqtt_client.publish_data(element, "sensors/ual-hour-inference/ual-3")
         mqtt_client.stop()
-
-
-
 
 
 if __name__ == "__main__":
