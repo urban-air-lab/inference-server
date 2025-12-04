@@ -871,6 +871,7 @@ source = { virtual = "." }
 dependencies = [
     { name = "apscheduler" },
     { name = "mlflow" },
+    { name = "pytest" },
     { name = "scikit-learn" },
     { name = "ual" },
 ]
@@ -879,6 +880,7 @@ dependencies = [
 requires-dist = [
     { name = "apscheduler", specifier = ">=3.11.1" },
     { name = "mlflow", specifier = ">=3.6.0" },
+    { name = "pytest", specifier = ">=9.0.1" },
     { name = "scikit-learn", specifier = "==1.6.1" },
     { name = "ual", git = "https://github.com/urban-air-lab/common" },
 ]
