@@ -50,7 +50,7 @@ class InferenceService:
         self.sensor_source = sensor_source
         self.config = config
 
-    def initial_inference(self):
+    def initial_inference(self) -> None:
         logging.info("Initial inference started.")
         inputs_query: str = InfluxQueryBuilder() \
             .set_bucket(self.sensor_source.get_bucket()) \
@@ -62,7 +62,7 @@ class InferenceService:
         self.run_inference(input_data)
         logging.info(f'Initial inference complete for {self.config["start_time"]} - {self.config["stop_time"]}')
 
-    def hourly_inference(self):
+    def hourly_inference(self) -> None:
         start_of_hour, end_of_hour = get_last_hour()
         logging.info(f"Inference of hour: {start_of_hour} - {end_of_hour}")
 
