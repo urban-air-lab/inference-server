@@ -21,6 +21,16 @@ from ual.mqtt.mqtt_client import MQTTClient
 load_dotenv()
 logging = get_logger()
 
+class MLFlowClient:
+    def __init__(self, username: str, password: str):
+        os.environ['MLFLOW_TRACKING_USERNAME'] = username
+        os.environ['MLFLOW_TRACKING_PASSWORD'] = password
+        mlflow.set_tracking_uri(os.getenv("MLFLOW_URL"))
+
+    def load_scikit_learn_model(self, model_path:str) -> BaseEstimator:
+        return mlflow.sklearn.load_model(model_path)
+
+
 def get_last_hour() -> Tuple[str, str]:
     now: datetime = datetime.now()
     now: datetime = now.replace(minute=0, second=0, microsecond=0)
@@ -41,14 +51,17 @@ def get_next_full_hour() -> datetime:
 
 
 class InferenceService:
-    def __init__(self, influx_url: str,
-                 influx_token: str,
-                 influx_org: str,
+    def __init__(self,
+                 influx_connector: InfluxDBConnector,
+                 mqtt_client: MQTTClient,
+                 mlflow_client,
                  sensor_source: SensorSource,
                  config: dict):
-        self.connection: InfluxDBConnector = InfluxDBConnector(influx_url, influx_token,influx_org)
-        self.sensor_source = sensor_source
-        self.config = config
+        self.connection: InfluxDBConnector = influx_connector
+        self.mqtt_client: MQTTClient = mqtt_client
+        self.mlflow_client: MLFlowClient = mlflow_client
+        self.sensor_source: SensorSource = sensor_source
+        self.config: dict = config
 
     def initial_inference(self) -> None:
         logging.info("Initial inference started.")
@@ -83,10 +96,7 @@ class InferenceService:
                                          .calculate_w_a_difference(['NO', 'NO2', 'O3'])
                                          .align_dataframes_by_time())
 
-        os.environ['MLFLOW_TRACKING_USERNAME'] = os.getenv("MLFLOW_USERNAME")
-        os.environ['MLFLOW_TRACKING_PASSWORD'] = os.getenv("MLFLOW_PASSWORD")
-        mlflow.set_tracking_uri(os.getenv("MLFLOW_URL"))
-        model: BaseEstimator = mlflow.sklearn.load_model(f"models:/{run_config['model_name']}/{run_config['model_version']}")
+        model: BaseEstimator = self.mlflow_client.load_scikit_learn_model(f"models:/{self.config['model_name']}/{self.config['model_version']}")
 
         prediction: np.ndarray = model.predict(data_processor.get_inputs())
 
@@ -94,23 +104,19 @@ class InferenceService:
         dataframe_predictions["timestamp"] = data_processor.get_inputs().index.astype('int64') // 10 ** 9
 
         data: list[dict] = dataframe_predictions.to_dict(orient='records')
-        mqtt_client: MQTTClient = MQTTClient(os.getenv("MQTT_SERVER"), int(os.getenv("MQTT_PORT")),
+        self.mqtt_client: MQTTClient = MQTTClient(os.getenv("MQTT_SERVER"), int(os.getenv("MQTT_PORT")),
                                              os.getenv("MQTT_USERNAME"), os.getenv("MQTT_PASSWORD"))
         for element in data:
-            mqtt_client.publish_data(element, "sensors/ual-hour-inference/ual-3")
-        mqtt_client.stop()
+            self.mqtt_client.publish_data(element, "sensors/ual-hour-inference/ual-3")
+        self.mqtt_client.stop()
 
 
 if __name__ == "__main__":
-    run_config: dict = get_config("./run_config.yaml")
-    ual_source = SensorSource(bucket=InfluxBuckets.UAL_MINUTE_CALIBRATION_BUCKET,
-                              sensor=sensors.UALSensors.UAL_3)
-
-    inference_service:InferenceService = InferenceService(os.getenv("INFLUX_URL"),
-                                                          os.getenv("INFLUX_TOKEN"),
-                                                          os.getenv("INFLUX_ORG"),
-                                                          ual_source,
-                                                          run_config)
+    inference_service:InferenceService = InferenceService(InfluxDBConnector(os.getenv("INFLUX_URL"), os.getenv("INFLUX_TOKEN"), os.getenv("INFLUX_ORG")),
+                                                          MQTTClient(os.getenv("MQTT_SERVER"), int(os.getenv("MQTT_PORT")), os.getenv("MQTT_USERNAME"), os.getenv("MQTT_PASSWORD")),
+                                                          MLFlowClient(os.getenv("MLFLOW_USERNAME"), os.getenv("MLFLOW_PASSWORD")),
+                                                          SensorSource(bucket=InfluxBuckets.UAL_MINUTE_CALIBRATION_BUCKET, sensor=sensors.UALSensors.UAL_3),
+                                                          get_config("./run_config.yaml"))
     inference_service.initial_inference()
 
     next_full_hour: datetime = get_next_full_hour()
