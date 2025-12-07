@@ -76,8 +76,6 @@ class InferenceService:
         dataframe_predictions["timestamp"] = data_processor.get_inputs().index.astype('int64') // 10 ** 9
 
         data: list[dict] = dataframe_predictions.to_dict(orient='records')
-        self.mqtt_client: MQTTClient = MQTTClient(os.getenv("MQTT_SERVER"), int(os.getenv("MQTT_PORT")),
-                                             os.getenv("MQTT_USERNAME"), os.getenv("MQTT_PASSWORD"))
         for element in data:
             self.mqtt_client.publish_data(element, "sensors/ual-hour-inference/ual-3")
         self.mqtt_client.stop()
