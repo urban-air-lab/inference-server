@@ -78,7 +78,7 @@ class InferenceService:
         data: list[dict] = dataframe_predictions.to_dict(orient='records')
         for element in data:
             self.mqtt_client.publish_data(element, "sensors/ual-hour-inference/ual-3")
-        self.mqtt_client.stop()
+        #self.mqtt_client.stop() ## TODO: Wird hier direkt die verbindung beendet? Nochmal gegen checken mit joshkas client implementierung
 
 
 if __name__ == "__main__":
