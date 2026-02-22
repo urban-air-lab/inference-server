@@ -1,0 +1,37 @@
+models:
+  - name: "ual_3_no2"
+    sensor_bucket: "ual_minute_calibration"
+    sensor_name: "UAL-3"
+    mqtt_topic: "sensors/ual-hour-inference/ual-3"
+    model_name: "NO2_ual-3"
+    model_version: "1"
+    inputs:
+      - RAW_ADC_NO2_W
+      - RAW_ADC_NO2_A
+      - RAW_ADC_NO_W
+      - RAW_ADC_NO_A
+      - RAW_ADC_O3_W
+      - RAW_ADC_O3_A
+      - sht_temp
+      - sht_humid
+    targets:
+      - NO2
+
+  # Example: Add more models by copying the structure above
+  # - name: "ual_4_no2"
+  #   sensor_bucket: "ual_minute_calibration"
+  #   sensor_name: "UAL-4"
+  #   mqtt_topic: "sensors/ual-hour-inference/ual-4"
+  #   model_name: "NO2_ual-4"
+  #   model_version: "1"
+  #   inputs:
+  #     - RAW_ADC_NO2_W
+  #     - RAW_ADC_NO2_A
+  #     - RAW_ADC_NO_W
+  #     - RAW_ADC_NO_A
+  #     - RAW_ADC_O3_W
+  #     - RAW_ADC_O3_A
+  #     - sht_temp
+  #     - sht_humid
+  #   targets:
+  #     - NO2

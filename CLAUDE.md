@@ -63,11 +63,21 @@ NEVER log sensitive information (passwords, tokens, PII)
 
 ## Project Overview
 
-This is an inference server for Urban Air Lab sensor data that performs machine learning inference on air quality measurements. The system provides two modes of operation:
-1. **Scheduled Hourly Inference** (`inference.py`): Runs continuously, performing predictions every hour
-2. **On-Demand Inference** (`on_demand_inference.py`): Runs inference for a specified historical time range
+This is an inference server for Urban Air Lab sensor data that performs machine learning inference on air quality measurements. The system uses a **factory pattern with model registry** to easily manage multiple sensors and models.
+
+### Operating Modes
+
+1. **Scheduled Hourly Inference** (`inference.py`): Runs continuously, performing predictions every hour for all registered models
+2. **On-Demand Inference** (`on_demand_inference.py`): Runs inference for a specified historical time range on a single model
 
 Both modes load trained models from MLflow, query sensor data from InfluxDB, and publish predictions to MQTT.
+
+### Architecture
+
+The system uses a **factory pattern** to create inference services from configuration:
+- **Model Registry** (`models_registry.yaml`): Central configuration file listing all active models
+- **Factory** (`inference_factory.py`): Creates InferenceService instances from model configs
+- **Multi-Model Scheduling**: Runs multiple models concurrently using separate scheduler threads
 
 ## Development Commands
 
@@ -137,6 +147,12 @@ docker run --env-file .env inference-server
 
 ### Core Components
 
+**Inference Factory** (`app/src/inference_factory.py`): Factory pattern for creating inference services:
+- `create_inference_service(model_config)`: Creates InferenceService from config dictionary
+- `validate_model_config(model_config)`: Validates required fields in model configuration
+- Handles all dependency injection (InfluxDB, MQTT, MLflow clients)
+- Eliminates boilerplate when adding new models
+
 **InferenceService** (`app/src/inference.py`): Reusable class that orchestrates the inference process:
 - Connects to InfluxDB to query sensor data (via ual.influx.InfluxDBConnector)
 - Loads ML models from MLflow (via MLFlowClient)
@@ -145,19 +161,22 @@ docker run --env-file .env inference-server
 - Publishes predictions to MQTT broker
 
 **Scheduled Inference** (`app/src/inference.py` main block):
-- Runs continuously using APScheduler
-- Executes hourly_inference() at the top of each hour (+ 1 minute buffer to ensure data arrival)
-- Uses `scheduled_config.yaml` for configuration (no time range needed)
+- Loads all models from `models_registry.yaml`
+- Creates InferenceService for each model using factory
+- Runs multiple models concurrently using separate APScheduler instances
+- Each model executes hourly_inference() at the top of each hour (+ 1 minute buffer)
 
 **On-Demand Inference** (`app/src/on_demand_inference.py`):
-- Runs inference for a specified historical time range
-- Config file path set via CONFIG_PATH constant at top of file (defaults to "./run_config.yaml")
-- Uses `run_config.yaml` (or custom config) with start_time/stop_time parameters
-- Designed for IDE execution - just edit CONFIG_PATH and run
+- Runs inference for a specified historical time range on a single model
+- Supports two modes:
+  - **Standalone**: Use complete config file (run_config.yaml)
+  - **Registry-based**: Select model from models_registry.yaml by name
+- Config file path and model name set via constants at top of file
+- Designed for IDE execution - just edit CONFIG_PATH/MODEL_NAME and run
 - Exits after completing inference
 
 **Data Flow**:
-1. Query sensor data from InfluxDB (bucket: UAL_MINUTE_CALIBRATION_BUCKET, sensor: UAL-3)
+1. Query sensor data from InfluxDB (bucket and sensor configured in YAML)
 2. Process data using ual.data_processor.DataProcessor:
    - Convert to hourly aggregates
    - Remove NaN values
@@ -165,7 +184,7 @@ docker run --env-file .env inference-server
    - Align dataframes by timestamp
 3. Load scikit-learn model from MLflow
 4. Run predictions
-5. Publish results to MQTT topic `sensors/ual-hour-inference/ual-3`
+5. Publish results to MQTT topic (configured in YAML)
 
 **MLFlowClient** (`app/src/mlflow_service.py`): Handles authentication and model loading from MLflow tracking server.
 
@@ -175,15 +194,51 @@ docker run --env-file .env inference-server
 
 ### Configuration
 
-**scheduled_config.yaml** (`app/src/scheduled_config.yaml`): Configuration for scheduled hourly inference:
-- `inputs`: Sensor fields to query (RAW_ADC values for NO2, NO, O3 electrodes + temperature/humidity)
-- `targets`: Prediction targets (currently NO2)
-- `model_name`/`model_version`: MLflow model identifier
-- No time range needed (automatically uses last complete hour)
+**models_registry.yaml** (`app/src/models_registry.yaml`): Central registry for all models
+- Contains a `models` list with one entry per sensor/model combination
+- Each model entry includes:
+  - `name`: Unique identifier for the model (e.g., "ual_3_no2")
+  - `sensor_bucket`: InfluxDB bucket name (e.g., "ual_minute_calibration")
+  - `sensor_name`: Sensor identifier (e.g., "UAL-3")
+  - `mqtt_topic`: MQTT topic for publishing predictions (e.g., "sensors/ual-hour-inference/ual-3")
+  - `model_name`/`model_version`: MLflow model identifier
+  - `inputs`: Sensor fields to query (RAW_ADC values for NO2, NO, O3 electrodes + temperature/humidity)
+  - `targets`: Prediction targets (e.g., NO2)
 
-**run_config.yaml** (`app/src/run_config.yaml`): Configuration for on-demand inference:
-- Same fields as scheduled_config.yaml, plus:
+**run_config.yaml** (`app/src/run_config.yaml`): Standalone config for on-demand inference
+- All fields from model registry entry, plus:
 - `start_time`/`stop_time`: Historical time range in ISO 8601 UTC format (e.g., "2025-12-11T00:00:00Z")
+
+**scheduled_config.yaml** (Legacy): Old single-model config - prefer using models_registry.yaml
+
+### Registering New Models
+
+To add a new sensor/model for hourly inference:
+
+1. **Add to models registry** (`app/src/models_registry.yaml`):
+```yaml
+models:
+  - name: "ual_4_no2"  # Unique identifier
+    sensor_bucket: "ual_minute_calibration"
+    sensor_name: "UAL-4"
+    mqtt_topic: "sensors/ual-hour-inference/ual-4"
+    model_name: "NO2_ual-4"
+    model_version: "1"
+    inputs:
+      - RAW_ADC_NO2_W
+      - RAW_ADC_NO2_A
+      # ... other fields
+    targets:
+      - NO2
+```
+
+2. **Restart the inference service** - it will automatically pick up all registered models
+
+3. **For on-demand inference**:
+   - Option A: Create standalone config file and set `CONFIG_PATH`
+   - Option B: Use registry with `CONFIG_PATH = "./models_registry.yaml"` and `MODEL_NAME = "ual_4_no2"`
+
+The factory pattern (`inference_factory.py`) handles all the boilerplate of creating services, so you never need to modify code to add new models.
 
 ### Dependencies
 

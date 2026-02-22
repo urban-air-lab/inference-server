@@ -1,86 +1,106 @@
 import os
+from typing import Optional
+
 import pandas as pd
 from dotenv import load_dotenv
 from ual.get_config import get_config
 from ual.logging import get_logger
-from ual.influx import sensors
-from ual.influx.Influx_db_connector import InfluxDBConnector
-from ual.influx.influx_buckets import InfluxBuckets
-from ual.influx.influx_query_builder import InfluxQueryBuilder
-from ual.influx.sensors import SensorSource
-from ual.mqtt.mqtt_client import MQTTClient
 
-from app.src.mlflow_service import MLFlowClient
-from app.src.inference import InferenceService
+from app.src.inference_factory import create_inference_service, validate_model_config
 
 load_dotenv()
 logging = get_logger()
 
 
-def run_on_demand_inference(config_path: str) -> None:
+def run_on_demand_inference(
+    config_path: str, model_name: Optional[str] = None
+) -> None:
     """
     Run inference on-demand for a specified time range.
 
+    Supports two modes:
+    1. Standalone config: config_path points to a complete config file
+    2. Registry-based: config_path points to a registry, model_name selects which model
+
     Args:
-        config_path: Path to the YAML configuration file containing:
-                    - start_time: ISO 8601 UTC timestamp
-                    - stop_time: ISO 8601 UTC timestamp
-                    - inputs: List of sensor fields to query
-                    - targets: List of prediction targets
-                    - model_name: MLflow model name
-                    - model_version: MLflow model version
+        config_path: Path to YAML config file (standalone or registry)
+        model_name: Optional model name to select from registry
+
+    Standalone config should contain:
+        - start_time: ISO 8601 UTC timestamp
+        - stop_time: ISO 8601 UTC timestamp
+        - inputs: List of sensor fields to query
+        - targets: List of prediction targets
+        - model_name: MLflow model name
+        - model_version: MLflow model version
+        - sensor_bucket: InfluxDB bucket name
+        - sensor_name: Sensor identifier
+        - mqtt_topic: MQTT topic for publishing predictions
     """
     logging.info(f"Loading configuration from {config_path}")
     config: dict = get_config(config_path)
 
-    # Validate required config fields
-    required_fields = ["start_time", "stop_time", "inputs", "model_name", "model_version"]
-    for field in required_fields:
-        if field not in config:
-            logging.error(f"Missing required field '{field}' in configuration")
-            raise ValueError(f"Missing required field '{field}' in configuration")
+    # Check if this is a registry config or standalone config
+    if "models" in config:
+        # Registry-based mode
+        if not model_name:
+            logging.error(
+                "model_name must be specified when using a models registry config"
+            )
+            raise ValueError(
+                "model_name parameter required when config contains 'models' registry"
+            )
 
-    # Initialize services
-    influx_connector = InfluxDBConnector(
-        os.getenv("INFLUX_URL"),
-        os.getenv("INFLUX_TOKEN"),
-        os.getenv("INFLUX_ORG")
-    )
+        models = config["models"]
+        model_config = next(
+            (m for m in models if m.get("name") == model_name), None
+        )
 
-    mqtt_client = MQTTClient(
-        os.getenv("MQTT_SERVER"),
-        int(os.getenv("MQTT_PORT")),
-        os.getenv("MQTT_USERNAME"),
-        os.getenv("MQTT_PASSWORD")
-    )
+        if not model_config:
+            available_models = [m.get("name") for m in models]
+            logging.error(
+                f"Model '{model_name}' not found in registry. Available: {available_models}"
+            )
+            raise ValueError(
+                f"Model '{model_name}' not found. Available: {available_models}"
+            )
 
-    mlflow_client = MLFlowClient(
-        os.getenv("MLFLOW_USERNAME"),
-        os.getenv("MLFLOW_PASSWORD")
-    )
+        logging.info(f"Selected model '{model_name}' from registry")
+    else:
+        # Standalone config mode
+        model_config = config
 
-    sensor_source = SensorSource(
-        bucket=InfluxBuckets.UAL_MINUTE_CALIBRATION_BUCKET,
-        sensor=sensors.UALSensors.UAL_3
-    )
+    # Validate time range fields
+    if "start_time" not in model_config or "stop_time" not in model_config:
+        logging.error(
+            "Missing start_time or stop_time in configuration for on-demand inference"
+        )
+        raise ValueError(
+            "On-demand inference requires start_time and stop_time in config"
+        )
 
-    # Create inference service
-    inference_service = InferenceService(
-        influx_connector,
-        mqtt_client,
-        mlflow_client,
-        sensor_source,
-        config
-    )
+    # Validate model configuration
+    validate_model_config(model_config)
+
+    # Create inference service using factory
+    inference_service = create_inference_service(model_config)
 
     # Run inference for the configured time range
-    logging.info(f"Starting on-demand inference from {config['start_time']} to {config['stop_time']}")
+    logging.info(
+        f"Starting on-demand inference from {model_config['start_time']} to {model_config['stop_time']}"
+    )
     inference_service.initial_inference()
     logging.info("On-demand inference completed successfully")
 
 
 if __name__ == "__main__":
     # Configure the path to your inference config file here
+    # Option 1: Use standalone config file
     CONFIG_PATH: str = "./run_config.yaml"
+    MODEL_NAME: Optional[str] = None
 
-    run_on_demand_inference(CONFIG_PATH)
+    # Option 2: Use models registry (uncomment to use)
+    # CONFIG_PATH: str = "./models_registry.yaml"
+    # MODEL_NAME: Optional[str] = "ual_3_no2"
+
+    run_on_demand_inference(CONFIG_PATH, MODEL_NAME)
