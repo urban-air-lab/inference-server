@@ -63,7 +63,11 @@ NEVER log sensitive information (passwords, tokens, PII)
 
 ## Project Overview
 
-This is an inference server for Urban Air Lab sensor data that performs machine learning inference on air quality measurements. The system uses a sliding window approach: it loads a trained model from MLflow and runs hourly predictions on sensor data from InfluxDB, publishing results to MQTT.
+This is an inference server for Urban Air Lab sensor data that performs machine learning inference on air quality measurements. The system provides two modes of operation:
+1. **Scheduled Hourly Inference** (`inference.py`): Runs continuously, performing predictions every hour
+2. **On-Demand Inference** (`on_demand_inference.py`): Runs inference for a specified historical time range
+
+Both modes load trained models from MLflow, query sensor data from InfluxDB, and publish predictions to MQTT.
 
 ## Development Commands
 
@@ -83,19 +87,49 @@ uv sync --locked
 # Run all tests
 uv run pytest
 
+# Run all tests with verbose output
+uv run pytest -v
+
 # Run specific test file
-uv run pytest app/test/inference_test.py
+uv run pytest app/test/test_time_service.py
+
+# Run specific test class
+uv run pytest app/test/test_inference_service.py::TestInferenceServiceRunInference
+
+# Run specific test method
+uv run pytest app/test/test_time_service.py::TestGetLastHour::test_get_last_hour_at_midnight
+
+# Run tests with coverage report
+uv run pytest --cov=app/src --cov-report=html
+
+# Run only unit tests (excludes integration tests)
+uv run pytest -m "not integration"
+
+# Run only integration tests
+uv run pytest app/test/test_inference_integration.py
 ```
+
+**Test Structure:**
+- `test_time_service.py`: Unit tests for time utility functions
+- `test_inference_service.py`: Unit tests for InferenceService class methods
+- `test_inference_integration.py`: Integration tests for end-to-end inference flows
+- `test_on_demand_inference.py`: Unit tests for on-demand inference script
+
+All external dependencies (InfluxDB, MQTT, MLflow) are mocked in tests.
 
 ### Running the Application
 ```bash
-# Run locally
+# Run scheduled hourly inference (runs continuously)
 uv run app/src/inference.py
 
-# Build Docker image
+# Run on-demand inference for a specific time range
+# Edit CONFIG_PATH in on_demand_inference.py to point to your config file, then run:
+uv run app/src/on_demand_inference.py
+
+# Build Docker image (runs scheduled inference)
 docker build -t inference-server .
 
-# Run Docker container
+# Run Docker container (scheduled mode)
 docker run --env-file .env inference-server
 ```
 
@@ -103,12 +137,24 @@ docker run --env-file .env inference-server
 
 ### Core Components
 
-**InferenceService** (`app/src/inference.py`): Main orchestrator that:
+**InferenceService** (`app/src/inference.py`): Reusable class that orchestrates the inference process:
 - Connects to InfluxDB to query sensor data (via ual.influx.InfluxDBConnector)
 - Loads ML models from MLflow (via MLFlowClient)
-- Runs initial inference on historical data range specified in run_config.yaml
-- Schedules hourly inference jobs using APScheduler (runs at top of each hour + 1 minute buffer)
+- Provides `initial_inference()` for historical data ranges (used by on_demand_inference.py)
+- Provides `hourly_inference()` for scheduled predictions (used by inference.py main block)
 - Publishes predictions to MQTT broker
+
+**Scheduled Inference** (`app/src/inference.py` main block):
+- Runs continuously using APScheduler
+- Executes hourly_inference() at the top of each hour (+ 1 minute buffer to ensure data arrival)
+- Uses `scheduled_config.yaml` for configuration (no time range needed)
+
+**On-Demand Inference** (`app/src/on_demand_inference.py`):
+- Runs inference for a specified historical time range
+- Config file path set via CONFIG_PATH constant at top of file (defaults to "./run_config.yaml")
+- Uses `run_config.yaml` (or custom config) with start_time/stop_time parameters
+- Designed for IDE execution - just edit CONFIG_PATH and run
+- Exits after completing inference
 
 **Data Flow**:
 1. Query sensor data from InfluxDB (bucket: UAL_MINUTE_CALIBRATION_BUCKET, sensor: UAL-3)
@@ -129,11 +175,15 @@ docker run --env-file .env inference-server
 
 ### Configuration
 
-**run_config.yaml** (`app/src/run_config.yaml`): Defines inference parameters:
-- `start_time`/`stop_time`: Initial inference window
+**scheduled_config.yaml** (`app/src/scheduled_config.yaml`): Configuration for scheduled hourly inference:
 - `inputs`: Sensor fields to query (RAW_ADC values for NO2, NO, O3 electrodes + temperature/humidity)
 - `targets`: Prediction targets (currently NO2)
 - `model_name`/`model_version`: MLflow model identifier
+- No time range needed (automatically uses last complete hour)
+
+**run_config.yaml** (`app/src/run_config.yaml`): Configuration for on-demand inference:
+- Same fields as scheduled_config.yaml, plus:
+- `start_time`/`stop_time`: Historical time range in ISO 8601 UTC format (e.g., "2025-12-11T00:00:00Z")
 
 ### Dependencies
 

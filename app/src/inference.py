@@ -97,6 +97,9 @@ class InferenceService:
 
 
 if __name__ == "__main__":
+    # Load configuration for scheduled inference (only needs inputs, model_name, model_version)
+    config: dict = get_config("./scheduled_config.yaml")
+
     inference_service: InferenceService = InferenceService(
         InfluxDBConnector(
             os.getenv("INFLUX_URL"), os.getenv("INFLUX_TOKEN"), os.getenv("INFLUX_ORG")
@@ -112,12 +115,11 @@ if __name__ == "__main__":
             bucket=InfluxBuckets.UAL_MINUTE_CALIBRATION_BUCKET,
             sensor=sensors.UALSensors.UAL_3,
         ),
-        get_config("./run_config.yaml"),
+        config,
     )
-    inference_service.initial_inference()
 
     next_full_hour: datetime = get_next_full_hour()
-    logging.info(f"Inference at next full hour: {next_full_hour}")
+    logging.info(f"Starting hourly inference scheduler. Next run at: {next_full_hour}")
 
     scheduler = BlockingScheduler()
     scheduler.add_job(
@@ -126,5 +128,5 @@ if __name__ == "__main__":
         hours=1,
         next_run_time=next_full_hour,
     )
-    logging.info("Starting scheduler...")
+    logging.info("Scheduler started. Running hourly inference...")
     scheduler.start()

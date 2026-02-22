@@ -1,0 +1,14 @@
+inputs:
+  - RAW_ADC_NO2_W
+  - RAW_ADC_NO2_A
+  - RAW_ADC_NO_W
+  - RAW_ADC_NO_A
+  - RAW_ADC_O3_W
+  - RAW_ADC_O3_A
+  - sht_temp
+  - sht_humid
+targets:
+  - NO2
+
+model_name: "NO2_ual-3"
+model_version: "1"
