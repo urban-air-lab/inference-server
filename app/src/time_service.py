@@ -15,7 +15,10 @@ def get_last_hour() -> Tuple[str, str]:
     end_of_hour_iso_utc = end_of_hour_utc.isoformat().replace("+00:00", "Z")
     return start_of_hour_iso_utc, end_of_hour_iso_utc
 
+
 def get_next_full_hour() -> datetime:
     now = datetime.now()
     now = now.replace(minute=0, second=0, microsecond=0)
-    return now + timedelta(hours=1, minutes=1)  # 1 minute extra to be assured last sensor date arrived
+    return now + timedelta(
+        hours=1, minutes=1
+    )  # 1 minute extra to be assured last sensor date arrived
