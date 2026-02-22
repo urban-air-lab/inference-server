@@ -41,3 +41,9 @@ format code
 ```
 ruff format . 
 ```
+
+## Use MyPy for static type checking: 
+
+```
+mypy .
+```
