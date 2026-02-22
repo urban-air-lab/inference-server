@@ -1,18 +1,19 @@
 import os
 from datetime import datetime
+
 import numpy as np
 import pandas as pd
 from apscheduler.schedulers.blocking import BlockingScheduler
 from dotenv import load_dotenv
+from sklearn.base import BaseEstimator
 from ual.data_processor import DataProcessor
 from ual.get_config import get_config
-from ual.logging import get_logger
 from ual.influx import sensors
-from ual.influx.Influx_db_connector import InfluxDBConnector
 from ual.influx.influx_buckets import InfluxBuckets
+from ual.influx.Influx_db_connector import InfluxDBConnector
 from ual.influx.influx_query_builder import InfluxQueryBuilder
 from ual.influx.sensors import SensorSource
-from sklearn.base import BaseEstimator
+from ual.logging import get_logger
 from ual.mqtt.mqtt_client import MQTTClient
 
 from app.src.mlflow_service import MLFlowClient
