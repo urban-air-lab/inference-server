@@ -8,8 +8,8 @@ from ual.influx.influx_query_builder import InfluxQueryBuilder
 from ual.influx.sensors import SensorSource
 from ual.mqtt.mqtt_client import MQTTClient
 
-from app.src.mlflow_service import MLFlowService
-from app.src.time_service import get_last_hour
+from app.src.service.mlflow_service import MLFlowService
+from app.src.service.time_service import get_last_hour
 
 
 class InferenceService:
@@ -38,7 +38,7 @@ class InferenceService:
             .build()
         )
         input_data: pd.DataFrame = self.connection.query_dataframe(inputs_query)
-        self.run_inference(input_data)
+        self._run_inference(input_data)
         logging.info(
             f"Initial inference complete for {self.config['start_time']} - {self.config['stop_time']}"
         )
@@ -56,10 +56,10 @@ class InferenceService:
             .build()
         )
         input_data: pd.DataFrame = self.connection.query_dataframe(inputs_query)
-        self.run_inference(input_data)
+        self._run_inference(input_data)
         logging.info(f"Inference complete for hour: {start_of_hour} - {end_of_hour}")
 
-    def run_inference(self, inputs: pd.DataFrame) -> None:
+    def _run_inference(self, inputs: pd.DataFrame) -> None:
         data_processor: DataProcessor = (
             DataProcessor(inputs)
             .to_hourly()
