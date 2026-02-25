@@ -7,8 +7,8 @@ from ual.influx.sensors import SensorSource
 from ual.logging import get_logger
 from ual.mqtt.mqtt_client import MQTTClient
 
-from app.src.inference_service import InferenceService
-from app.src.mlflow_service import MLFlowService
+from app.src.service.inference_service import InferenceService
+from app.src.service.mlflow_service import MLFlowService
 
 load_dotenv()
 logging = get_logger()

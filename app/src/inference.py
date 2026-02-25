@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from ual.get_config import get_config
 from ual.logging import get_logger
 from app.src.inference_factory import create_inference_service, validate_model_config
-from app.src.time_service import get_next_full_hour
+from app.src.service.time_service import get_next_full_hour
 
 load_dotenv()
 logging = get_logger()
