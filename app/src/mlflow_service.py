@@ -4,7 +4,7 @@ import mlflow
 from sklearn.base import BaseEstimator
 
 
-class MLFlowClient:
+class MLFlowService:
     def __init__(self, username: str, password: str):
         os.environ["MLFLOW_TRACKING_USERNAME"] = username
         os.environ["MLFLOW_TRACKING_PASSWORD"] = password

@@ -7,8 +7,8 @@ from ual.influx.sensors import SensorSource
 from ual.logging import get_logger
 from ual.mqtt.mqtt_client import MQTTClient
 
-from app.src.inference import InferenceService
-from app.src.mlflow_service import MLFlowClient
+from app.src.inference_service import InferenceService
+from app.src.mlflow_service import MLFlowService
 
 load_dotenv()
 logging = get_logger()
@@ -47,7 +47,7 @@ def create_inference_service(model_config: Dict) -> InferenceService:
         os.getenv("MQTT_PASSWORD"),
     )
 
-    mlflow_client = MLFlowClient(
+    mlflow_client = MLFlowService(
         os.getenv("MLFLOW_USERNAME"), os.getenv("MLFLOW_PASSWORD")
     )
 
