@@ -96,7 +96,7 @@ def run_on_demand_inference(
 if __name__ == "__main__":
     # Configure the path to your inference config file here
     # Option 1: Use standalone config file
-    CONFIG_PATH: str = "./run_config.yaml"
+    CONFIG_PATH: str = "./config/run_config.yaml"
     MODEL_NAME: Optional[str] = None
 
     # Option 2: Use models registry (uncomment to use)

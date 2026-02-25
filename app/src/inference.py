@@ -13,7 +13,7 @@ logging = get_logger()
 
 if __name__ == "__main__":
     # Load models registry
-    registry_config: dict = get_config("./models_registry.yaml")
+    registry_config: dict = get_config("./config/models_registry.yaml")
     models = registry_config.get("models", [])
 
     if not models:
