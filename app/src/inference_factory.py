@@ -3,10 +3,9 @@ from typing import Dict
 
 from dotenv import load_dotenv
 from ual.influx.Influx_db_connector import InfluxDBConnector
+from ual.influx.sensors import SensorSource
 from ual.logging import get_logger
 from ual.mqtt.mqtt_client import MQTTClient
-
-from app.src.sensor import SensorSourceStr
 from app.src.service.inference_service import InferenceService
 from app.src.service.mlflow_service import MLFlowService
 
@@ -51,9 +50,8 @@ def create_inference_service(model_config: Dict) -> InferenceService:
         os.getenv("MLFLOW_USERNAME"), os.getenv("MLFLOW_PASSWORD")
     )
 
-    sensor_source = SensorSourceStr(
-        bucket=model_config["sensor_bucket"], sensor=model_config["sensor_name"]
-    )
+    sensor_source = SensorSource.from_strings(
+        bucket=model_config["sensor_bucket"], sensor=model_config["sensor_name"])
 
     inference_service = InferenceService(
         influx_connector, mqtt_client, mlflow_client, sensor_source, model_config
