@@ -74,7 +74,7 @@ class InferenceService:
 
         prediction: np.ndarray = model.predict(data_processor.get_inputs())
 
-        dataframe_predictions: pd.DataFrame = pd.DataFrame(prediction, columns=["NO2"])
+        dataframe_predictions: pd.DataFrame = pd.DataFrame(prediction, columns=self.config["inputs"])
         dataframe_predictions["timestamp"] = (
             data_processor.get_inputs().index.astype("int64") // 10**9
         )
