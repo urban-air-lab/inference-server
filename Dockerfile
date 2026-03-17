@@ -19,5 +19,7 @@ RUN uv sync --locked
 
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app
+ENV MLFLOW_HTTP_POOL_CONNECTIONS=30
+ENV MLFLOW_HTTP_POOL_MAXSIZE=30
 
 CMD ["uv", "run",  "app/src/inference.py"]
