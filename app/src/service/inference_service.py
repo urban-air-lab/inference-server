@@ -82,4 +82,3 @@ class InferenceService:
         data: list[dict] = dataframe_predictions.to_dict(orient="records")
         for element in data:
             self.mqtt_client.publish_data(element, self.config["mqtt_topic"])
-        self.mqtt_client.stop()
