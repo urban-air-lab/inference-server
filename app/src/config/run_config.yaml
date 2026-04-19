@@ -1,6 +1,6 @@
-name: "ual_3_no2"
-start_time: "2026-03-01T08:00:00Z"
-stop_time: "2026-03-01T09:00:00Z"
+name: "ual_4_no2"
+start_time: "2026-03-29T08:00:00Z"
+stop_time: "2026-04-30T09:00:00Z"
 inputs:
   - RAW_ADC_NO2_W
   - RAW_ADC_NO2_A
@@ -12,8 +12,8 @@ inputs:
   - sht_humid
 targets:
   - NO2
-model_name: "NO2_ual-3"
+model_name: "NO2_ual-4"
 model_version: "1"
-sensor_bucket: "ual-minute-calibration"
-sensor_name: "ual-3"
-mqtt_topic: "sensors/ual-hour-inference/ual-3"
+sensor_bucket: "ual-minute-measurement"
+sensor_name: "ual-4"
+mqtt_topic: "sensors/ual-hour-inference/ual-4"
