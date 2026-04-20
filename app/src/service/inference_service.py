@@ -56,7 +56,6 @@ class InferenceService:
             .set_fields(self.config["inputs"])
             .build()
         )
-        logging.info("DEBUG: " + inputs_query)
         logging.info(f"query data from {self.sensor_source.get_bucket()}/{self.sensor_source.get_sensor()}")
         input_data: pd.DataFrame = self.connection.query_dataframe(inputs_query)
         self._run_inference(input_data)
