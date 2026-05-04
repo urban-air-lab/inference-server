@@ -37,7 +37,9 @@ class InferenceService:
             .set_fields(self.config["inputs"])
             .build()
         )
-        logging.info(f"query data from {self.sensor_source.get_bucket()}/{self.sensor_source.get_sensor()}")
+        logging.info(
+            f"query data from {self.sensor_source.get_bucket()}/{self.sensor_source.get_sensor()}"
+        )
         input_data: pd.DataFrame = self.connection.query_dataframe(inputs_query)
         self._run_inference(input_data)
         logging.info(
@@ -56,7 +58,9 @@ class InferenceService:
             .set_fields(self.config["inputs"])
             .build()
         )
-        logging.info(f"query data from {self.sensor_source.get_bucket()}/{self.sensor_source.get_sensor()}")
+        logging.info(
+            f"query data from {self.sensor_source.get_bucket()}/{self.sensor_source.get_sensor()}"
+        )
         input_data: pd.DataFrame = self.connection.query_dataframe(inputs_query)
         self._run_inference(input_data)
         logging.info(f"Inference complete for hour: {start_of_hour} - {end_of_hour}")
@@ -76,7 +80,9 @@ class InferenceService:
 
         prediction: np.ndarray = model.predict(data_processor.get_inputs())
 
-        dataframe_predictions: pd.DataFrame = pd.DataFrame(prediction, columns=self.config["targets"])
+        dataframe_predictions: pd.DataFrame = pd.DataFrame(
+            prediction, columns=self.config["targets"]
+        )
         dataframe_predictions["timestamp"] = (
             data_processor.get_inputs().index.astype("int64") // 10**9
         )

@@ -9,9 +9,7 @@ load_dotenv()
 logging = get_logger()
 
 
-def run_on_demand_inference(
-    config_path: str, model_name: Optional[str] = None
-) -> None:
+def run_on_demand_inference(config_path: str, model_name: Optional[str] = None) -> None:
     """
     Run inference on-demand for a specified time range.
 
@@ -49,9 +47,7 @@ def run_on_demand_inference(
             )
 
         models = config["models"]
-        model_config = next(
-            (m for m in models if m.get("name") == model_name), None
-        )
+        model_config = next((m for m in models if m.get("name") == model_name), None)
 
         if not model_config:
             available_models = [m.get("name") for m in models]

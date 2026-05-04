@@ -28,7 +28,7 @@ if __name__ == "__main__":
         validate_model_config(model_config)
 
     # Create inference services for all models
-    services:list[tuple[str, InferenceService]] = []
+    services: list[tuple[str, InferenceService]] = []
     for model_config in models:
         service = create_inference_service(model_config)
         services.append((model_config["name"], service))

@@ -19,6 +19,3 @@ def test_load_model():
         model = mlflow_service.load_scikit_learn_model("model")
 
     assert isinstance(model, BaseEstimator)
-
-
-

@@ -33,7 +33,9 @@ def create_inference_service(model_config: Dict) -> InferenceService:
     Returns:
         Configured InferenceService instance
     """
-    logging.info(f"Creating inference service for model: {model_config.get('name', 'unnamed')}")
+    logging.info(
+        f"Creating inference service for model: {model_config.get('name', 'unnamed')}"
+    )
 
     influx_connector = InfluxDBConnector(
         os.getenv("INFLUX_URL"), os.getenv("INFLUX_TOKEN"), os.getenv("INFLUX_ORG")
@@ -51,7 +53,8 @@ def create_inference_service(model_config: Dict) -> InferenceService:
     )
 
     sensor_source = SensorSource.from_strings(
-        bucket=model_config["sensor_bucket"], sensor=model_config["sensor_name"])
+        bucket=model_config["sensor_bucket"], sensor=model_config["sensor_name"]
+    )
 
     inference_service = InferenceService(
         influx_connector, mqtt_client, mlflow_client, sensor_source, model_config

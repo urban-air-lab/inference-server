@@ -6,11 +6,11 @@ def get_last_hour() -> Tuple[str, str]:
     now: datetime = datetime.now()
     now: datetime = now.replace(minute=0, second=0, microsecond=0)
 
-    start_of_hour: datetime = now - timedelta(hours=2) # Currently set to summer time
+    start_of_hour: datetime = now - timedelta(hours=2)  # Currently set to summer time
     start_of_hour_utc = start_of_hour.replace(tzinfo=timezone.utc)
     start_of_hour_iso_utc = start_of_hour_utc.isoformat().replace("+00:00", "Z")
 
-    end_of_hour: datetime = now - timedelta(hours=1) # Currently set to summer time
+    end_of_hour: datetime = now - timedelta(hours=1)  # Currently set to summer time
     end_of_hour_utc = end_of_hour.replace(tzinfo=timezone.utc)
     end_of_hour_iso_utc = end_of_hour_utc.isoformat().replace("+00:00", "Z")
     return start_of_hour_iso_utc, end_of_hour_iso_utc
