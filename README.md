@@ -52,3 +52,8 @@ mypy .
 ```
 isort .
 ```
+
+## Use pip-audit for dependency vulnerabilities 
+``
+pip-audit
+``
