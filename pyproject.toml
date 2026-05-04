@@ -9,6 +9,7 @@ dependencies = [
     "isort>=8.0.0",
     "mlflow>=3.6.0",
     "mypy>=1.19.1",
+    "pip-audit>=2.10.0",
     "pytest>=9.0.1",
     "ruff>=0.15.2",
     "scikit-learn==1.6.1",
