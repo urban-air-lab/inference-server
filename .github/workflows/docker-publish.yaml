@@ -34,6 +34,12 @@ jobs:
         run: |
           uv run pytest
 
+      - name: Run linter with ruff
+        run: uv run ruff check .
+
+      - name: Run security check with pip-audit
+        run: uv run pip-audit
+
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
