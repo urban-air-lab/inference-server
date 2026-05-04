@@ -1,7 +1,4 @@
-import os
 from typing import Optional
-
-import pandas as pd
 from dotenv import load_dotenv
 from ual.get_config import get_config
 from ual.logging import get_logger
