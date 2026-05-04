@@ -3,16 +3,16 @@ name = "inference-server"
 version = "0.2.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
-    "apscheduler>=3.11.1",
-    "isort>=8.0.0",
-    "mlflow>=3.6.0",
-    "mypy>=1.19.1",
+    "apscheduler>=3.11.2",
+    "isort>=8.0.1",
+    "mlflow>=3.11.1",
+    "mypy>=1.20.2",
     "pip-audit>=2.10.0",
-    "pytest>=9.0.1",
-    "ruff>=0.15.2",
-    "scikit-learn==1.6.1",
+    "pytest>=9.0.3",
+    "ruff>=0.15.12",
+    "scikit-learn==1.8.0",
     "ual",
 ]
 
