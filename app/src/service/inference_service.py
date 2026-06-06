@@ -26,6 +26,9 @@ class InferenceService:
         self.mlflow_client: MLFlowService = mlflow_client
         self.sensor_source: SensorSource = sensor_source
         self.config: dict = config
+        self.model: BaseEstimator = self.mlflow_client.load_scikit_learn_model(
+            f"models:/{self.config['model_name']}/{self.config['model_version']}"
+        )
 
     def initial_inference(self) -> None:
         logging.info("Initial inference started.")
@@ -74,11 +77,7 @@ class InferenceService:
             .align_dataframes_by_time()
         )
 
-        model: BaseEstimator = self.mlflow_client.load_scikit_learn_model(
-            f"models:/{self.config['model_name']}/{self.config['model_version']}"
-        )
-
-        prediction: np.ndarray = model.predict(data_processor.get_inputs())
+        prediction: np.ndarray = self.model.predict(data_processor.get_inputs())
 
         dataframe_predictions: pd.DataFrame = pd.DataFrame(
             prediction, columns=self.config["targets"]
