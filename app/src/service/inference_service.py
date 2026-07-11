@@ -65,6 +65,10 @@ class InferenceService:
             f"query data from {self.sensor_source.get_bucket()}/{self.sensor_source.get_sensor()}"
         )
         input_data: pd.DataFrame = self.connection.query_dataframe(inputs_query)
+        if input_data is None or input_data.empty:
+            logging.info("No data for query " + str(inputs_query))
+            return
+
         self._run_inference(input_data)
         logging.info(f"Inference complete for hour: {start_of_hour} - {end_of_hour}")
 
