@@ -1,5 +1,4 @@
 import os
-from typing import Dict
 
 from dotenv import load_dotenv
 from ual.influx.influx_db_connector import InfluxDBConnector
@@ -14,7 +13,7 @@ load_dotenv()
 logging = get_logger("inference_server.inference_factory")
 
 
-def create_inference_service(model_config: Dict) -> InferenceService:
+def create_inference_service(model_config: dict) -> InferenceService:
     """
     Factory function to create an InferenceService from a model configuration.
 
@@ -70,7 +69,7 @@ def create_inference_service(model_config: Dict) -> InferenceService:
     return inference_service
 
 
-def validate_model_config(model_config: Dict) -> None:
+def validate_model_config(model_config: dict) -> None:
     """
     Validate that a model configuration contains all required fields.
 

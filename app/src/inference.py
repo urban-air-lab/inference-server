@@ -1,3 +1,4 @@
+import sys
 from datetime import datetime
 
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -6,8 +7,7 @@ from dotenv import load_dotenv
 from ual.get_config import get_config
 from ual.logging import get_logger
 
-from app.src.inference_factory import (create_inference_service,
-                                       validate_model_config)
+from app.src.inference_factory import create_inference_service, validate_model_config
 from app.src.service.inference_service import InferenceService
 from app.src.service.time_service import get_next_full_hour
 
@@ -22,7 +22,7 @@ if __name__ == "__main__":
 
     if not models:
         logging.error("No models found in models_registry.yaml")
-        exit(1)
+        sys.exit(1)
 
     logging.info(f"Found {len(models)} model(s) in registry")
 

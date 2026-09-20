@@ -1,17 +1,15 @@
-from typing import Optional
 
 from dotenv import load_dotenv
 from ual.get_config import get_config
 from ual.logging import get_logger
 
-from app.src.inference_factory import (create_inference_service,
-                                       validate_model_config)
+from app.src.inference_factory import create_inference_service, validate_model_config
 
 load_dotenv()
 logging = get_logger("inference_server.on_demand_inference")
 
 
-def run_on_demand_inference(config_path: str, model_name: Optional[str] = None) -> None:
+def run_on_demand_inference(config_path: str, model_name: str | None = None) -> None:
     """
     Run inference on-demand for a specified time range.
 
@@ -92,7 +90,7 @@ if __name__ == "__main__":
     # Configure the path to your inference config file here
     # Option 1: Use standalone config file
     CONFIG_PATH: str = "./config/run_config.yaml"
-    MODEL_NAME: Optional[str] = None
+    MODEL_NAME: str | None = None
 
     # Option 2: Use models registry (uncomment to use)
     # CONFIG_PATH: str = "./models_registry.yaml"

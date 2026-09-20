@@ -1,23 +1,23 @@
-from datetime import datetime, timedelta, timezone
-from typing import Tuple
+from datetime import UTC, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 
-def get_last_hour() -> Tuple[str, str]:
-    now: datetime = datetime.now()
+def get_last_hour() -> tuple[str, str]:
+    now: datetime = datetime.now(tz=ZoneInfo("Europe/Berlin"))
     now: datetime = now.replace(minute=0, second=0, microsecond=0)
 
     start_of_hour: datetime = now - timedelta(hours=2)  # Currently set to summer time
-    start_of_hour_utc = start_of_hour.replace(tzinfo=timezone.utc)
+    start_of_hour_utc = start_of_hour.replace(tzinfo=UTC)
     start_of_hour_iso_utc = start_of_hour_utc.isoformat().replace("+00:00", "Z")
 
     end_of_hour: datetime = now - timedelta(hours=1)  # Currently set to summer time
-    end_of_hour_utc = end_of_hour.replace(tzinfo=timezone.utc)
+    end_of_hour_utc = end_of_hour.replace(tzinfo=UTC)
     end_of_hour_iso_utc = end_of_hour_utc.isoformat().replace("+00:00", "Z")
     return start_of_hour_iso_utc, end_of_hour_iso_utc
 
 
 def get_next_full_hour() -> datetime:
-    now = datetime.now()
+    now = datetime.now(tz=ZoneInfo("Europe/Berlin"))
     now = now.replace(minute=0, second=0, microsecond=0)
     return now + timedelta(
         hours=1, minutes=1
