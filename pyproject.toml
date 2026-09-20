@@ -3,7 +3,7 @@ name = "inference-server"
 version = "0.4.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.13"
 dependencies = [
     "apscheduler>=3.11.2",
     "isort>=8.0.1",
