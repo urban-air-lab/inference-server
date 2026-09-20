@@ -3,7 +3,7 @@ import pandas as pd
 from sklearn.base import BaseEstimator
 from ual.data_processor import DataProcessor
 from ual.get_config import logging
-from ual.influx.Influx_db_connector import InfluxDBConnector
+from ual.influx.influx_db_connector import InfluxDBConnector
 from ual.influx.influx_query_builder import InfluxQueryBuilder
 from ual.influx.sensors import SensorSource
 from ual.mqtt.mqtt_client import MQTTClient

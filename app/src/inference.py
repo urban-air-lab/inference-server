@@ -12,7 +12,7 @@ from app.src.service.inference_service import InferenceService
 from app.src.service.time_service import get_next_full_hour
 
 load_dotenv()
-logging = get_logger()
+logging = get_logger("inference_server.inference")
 
 
 if __name__ == "__main__":

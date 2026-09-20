@@ -8,7 +8,7 @@ from app.src.inference_factory import (create_inference_service,
                                        validate_model_config)
 
 load_dotenv()
-logging = get_logger()
+logging = get_logger("inference_server.on_demand_inference")
 
 
 def run_on_demand_inference(config_path: str, model_name: Optional[str] = None) -> None:
